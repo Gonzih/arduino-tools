@@ -2,21 +2,28 @@ require 'tempfile'
 require 'fileutils'
 
 PROJECT          ||= File.basename(Dir.glob("*.pde").first, ".pde")
-MCU              ||= 'atmega328p'
+MCU              ||= 'uno'
 CPU              ||= '16000000L'
-PORT             ||= Dir.glob('/dev/tty.usbmodem*').first
+PORT             ||= Dir.glob('/dev/ttyACM*').first
 BITRATE          ||= '115200'
 PROGRAMMER       ||= 'stk500v1'
 
 BUILD_OUTPUT     ||= 'build'
-ARDUINO_HARDWARE ||= '/Applications/Arduino.app/Contents/Resources/Java/hardware'
+ARDUINO_HARDWARE ||= '/usr/share/arduino/hardware'
 AVRDUDE          ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avrdude"
 AVRDUDE_CONF     ||= "#{ARDUINO_HARDWARE}/tools/avr/etc/avrdude.conf"
 ARDUINO_CORES    ||= "#{ARDUINO_HARDWARE}/arduino/cores/arduino"
-AVR_G_PLUS_PLUS  ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avr-g++"
-AVR_GCC          ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avr-gcc"
-AVR_AR           ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avr-ar"
-AVR_OBJCOPY      ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avr-objcopy"
+AVR_G_PLUS_PLUS  ||= "avr-g++"
+AVR_GCC          ||= "avr-gcc"
+AVR_AR           ||= "avr-ar"
+AVR_OBJCOPY      ||= "avr-objcopy"
+
+LIB_DIRS         ||= []
+LIB_DIRS         <<  '/usr/share/arduino/hardware/arduino/variants/standard'
+
+def lib_dirs
+  LIB_DIRS.map { |dir| " -I#{dir} "}.join
+end
 
 def build_output_path(file)
   Dir.mkdir(BUILD_OUTPUT) if Dir.exist?(BUILD_OUTPUT) == false
@@ -47,7 +54,7 @@ task :preprocess do
   pde = "#{PROJECT}.pde"
   cpp = build_output_path("#{PROJECT}.cpp")
   File.open(cpp, 'w') do |file|
-    file.puts '#include "WProgram.h"'
+    file.puts '#include "Arduino.h"'
     file.puts File.read(pde)
   end
 end
@@ -55,14 +62,14 @@ end
 task :c do
   C_FILES.each do |source|
     output = build_output_path(File.basename(source, File.extname(source)) + ".o")
-    sh "#{AVR_GCC} -c -g -Os -w -ffunction-sections -fdata-sections -mmcu=#{MCU} -DF_CPU=#{CPU} -DARDUINO=22 -I#{ARDUINO_CORES} #{source} -o#{output}"
+    sh "#{AVR_GCC} -c -g -Os -w -ffunction-sections -fdata-sections -mmcu=#{MCU} -DF_CPU=#{CPU} -DARDUINO=22 -I#{ARDUINO_CORES} #{lib_dirs} #{source} -o#{output}"
   end
 end
 
 task :cpp do
   CPP_FILES.each do |source|
     output = build_output_path(File.basename(source, File.extname(source)) + ".o")
-    sh "#{AVR_G_PLUS_PLUS} -c -g -Os -w -fno-exceptions -ffunction-sections -fdata-sections -mmcu=#{MCU} -DF_CPU=#{CPU} -DARDUINO=22 -I#{ARDUINO_CORES} #{source} -o#{output}"
+    sh "#{AVR_G_PLUS_PLUS} -c -g -Os -w -fno-exceptions -ffunction-sections -fdata-sections -mmcu=#{MCU} -DF_CPU=#{CPU} -DARDUINO=22 -I#{ARDUINO_CORES} #{lib_dirs} #{source} -o#{output}"
   end
 end
 
