@@ -2,16 +2,16 @@ require 'tempfile'
 require 'fileutils'
 
 PROJECT          ||= File.basename(Dir.glob("*.pde").first, ".pde")
-MCU              ||= 'uno'
 CPU              ||= '16000000L'
-PORT             ||= Dir.glob('/dev/ttyACM*').first
+MCU              ||= 'atmega328p'
 BITRATE          ||= '115200'
-PROGRAMMER       ||= 'stk500v1'
+PROGRAMMER       ||= 'arduino'
+PORT             ||= Dir.glob('/dev/ttyACM*').first
 
 BUILD_OUTPUT     ||= 'build'
 ARDUINO_HARDWARE ||= '/usr/share/arduino/hardware'
-AVRDUDE          ||= "#{ARDUINO_HARDWARE}/tools/avr/bin/avrdude"
-AVRDUDE_CONF     ||= "#{ARDUINO_HARDWARE}/tools/avr/etc/avrdude.conf"
+AVRDUDE          ||= "#{ARDUINO_HARDWARE}/tools/avrdude"
+AVRDUDE_CONF     ||= "#{ARDUINO_HARDWARE}/tools/avrdude.conf"
 ARDUINO_CORES    ||= "#{ARDUINO_HARDWARE}/arduino/cores/arduino"
 AVR_G_PLUS_PLUS  ||= "avr-g++"
 AVR_GCC          ||= "avr-gcc"
@@ -42,7 +42,11 @@ task :compile => [:clean, :preprocess, :c, :cpp, :hex]
 desc "Upload compiled hex file to your device"
 task :upload do
   hex = build_output_path("#{PROJECT}.hex")
-  sh "#{AVRDUDE} -C#{AVRDUDE_CONF} -q -q -p#{MCU} -c#{PROGRAMMER} -P#{PORT} -b#{BITRATE} -D -Uflash:w:#{hex}:i"
+  if PORT
+    sh "#{AVRDUDE} -C#{AVRDUDE_CONF} -q -q -p#{MCU} -c#{PROGRAMMER} -P#{PORT} -b#{BITRATE} -D -Uflash:w:#{hex}:i"
+  else
+    raise 'No Arduino device detected'
+  end
 end
 
 desc "Delete the build output directory"
