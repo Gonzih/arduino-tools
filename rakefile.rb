@@ -4,8 +4,12 @@ require 'fileutils'
 PROJECT          ||= File.basename(Dir.glob("*.pde").first, ".pde")
 CPU              ||= '16000000L'
 MCU              ||= 'atmega328p'
+# Baud-rate: use "115200" for Uno or "19200" for Duemilanove
 BITRATE          ||= '115200'
+# Boardy type: use "arduino" for Uno or "stk500v1" for Duemilanove
 PROGRAMMER       ||= 'arduino'
+# Uno, in GNU/linux: generally /dev/ttyACM0
+# Duemilanove, in GNU/linux: generally /dev/ttyUSB0
 PORT             ||= Dir.glob('/dev/ttyACM*').first
 
 BUILD_OUTPUT     ||= 'build'
